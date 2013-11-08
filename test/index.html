@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <title>Video.js VAST Example</title>
 
-  <link href="../videojs/video-js.css" rel="stylesheet" type="text/css">
+  <link href="../videojs/video-js.min.css" rel="stylesheet" type="text/css">
   <link href="../vast.video.css" rel="stylesheet" type="text/css">
 
   <style type="text/css">
@@ -18,15 +18,14 @@
   <!--<![endif]-->
 
   <!-- GENERATED LIST OF SOURCE FILES -->
-  <script src="../videojs/minified.video.js"></script>
-  <script src="../responsive.video.js"></script>
+  <script src="../videojs/video.js"></script>
   <script src="../vast.js"></script>
   <script src="../vast.video.js"></script>
   <script>
       // Easy access to test Flash over HTML5. Add ?flash to URL
       if (window.location.href.indexOf("?flash") !== -1) {
-        _V_.options.techOrder = ["flash"];
-        _V_.options.flash.swf = "../videojs/video-js.swf";
+        videojs.options.techOrder = ["flash"];
+        videojs.options.flash.swf = "../videojs/video-js.swf";
       }
   </script>
 </head>
@@ -43,21 +42,14 @@
   </video>
 
   <script>
-    (function() {
-      var vid1;
-
-      // register the plugins
-      _V_.plugin('responsive', responsive);
-      _V_.plugin('vast', vast);
-
-      // initialize it
-      vid1 = _V_('vid1');
-      vid1.responsive();
-      
-      // vid1.vast({VASTServers: ['http://ad.doubleclick.net/pfadx/N270.126913.6102203221521/B3876671.21;dcadv=2215309;sz=0x0;ord=%5btimestamp%5d;dcmt=text/xml']});
-
-      vid1.vast({VASTServers: ['http://ad.doubleclick.net/pfadx/N2870.3804.THEONION/B7370520.11;sz=0x0;dcmt=text/xml']});
-    })();
+    videojs('vid1', {
+        autoplay: true,
+        plugins: {
+            vast: {
+                url: "http://videoads.theonion.com/vast/9.xml",
+            }
+        }
+    });
   </script>
 
 </body>

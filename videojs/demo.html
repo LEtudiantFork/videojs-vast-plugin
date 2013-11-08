@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Video.js | HTML5 Video Player</title>
+
+  <!-- Chang URLs to wherever Video.js files will be hosted -->
+  <link href="video-js.css" rel="stylesheet" type="text/css">
+  <!-- video.js must be in the <head> for older IEs to work. -->
+  <script src="video.js"></script>
+  <script src="vast.js"></script>
+  <script src="vast.video.js"></script>
+
+  <!-- Unless using the CDN hosted version, update the URL to the Flash SWF -->
+  <script>
+    videojs.options.flash.swf = "video-js.swf";
+  </script>
+  <style type="text/css">
+    .video-js .vast-skip-button {
+        display: block;
+        position: absolute;
+        top: 5px;
+        right: 0;
+        width: auto;
+        background-color: #000;
+        color: #AAA;
+        font-size: 12px;
+        font-style: italic;
+        line-height: 12px;
+        padding: 10px;
+        z-index: 3;
+    }
+
+    .video-js .vast-skip-button.enabled {
+        cursor: pointer;
+        color: #fff;
+    }
+
+    .video-js .vast-skip-button.enabled:hover {
+        cursor: pointer;
+        background: #333;
+    }
+  </style>
+
+
+</head>
+<body>
+
+  <video id="example_video_1" class="video-js vjs-default-skin" preload="auto" controls width="640" height="264"
+      poster="http://video-js.zencoder.com/oceans-clip.png">
+    <source src="http://s3.amazonaws.com/onionmedia/videos/videometa/1877/zen_mp4.mp4" type='video/mp4' />
+<!--     <source src="http://s3.amazonaws.com/onionmedia/videos/videometa/1877/zen_webm.webm" type='video/webm' />
+ -->  </video>
+
+  <script>
+    videojs('example_video_1', {
+        autoplay: true,
+        plugins: {
+            vast: {
+                url: "http://videoads.theonion.com/vast/9.xml",
+            }
+        }
+    });
+  </script>
+</body>
+</html>
