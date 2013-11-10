@@ -22,3 +22,7 @@
     cursor: pointer;
     background: #333;
 }
+
+.vjs-ad-playing .vjs-seek-handle {
+    display: none;
+}

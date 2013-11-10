@@ -17,6 +17,22 @@
     skip: 5,
   },
 
+  firePixel = function(uri) {
+    var type = Object.prototype.toString.call(uri);
+    switch (type) {
+      case '[object String]':
+        console.log(uri);
+        break;
+      case '[object Array]':
+        for(var i in uri) {
+          console.log(uri[i]);
+        }
+        break;
+      default:
+        throw new Error("Unrecognized uri type: " + type);
+    }
+  },
+
   vastPlugin = function(options) {
     var player = this;
     var settings = extend({}, defaults, options || {});
@@ -28,6 +44,7 @@
 
     // If we don't have a VAST url, just bail out.
     if(options.url === undefined) {
+      player.trigger('adtimeout');
       return;
     }
 
@@ -36,6 +53,8 @@
         if(ads.length > 0) {
           player.vast.ad = ads[0];
           player.trigger('adsready');
+        } else {
+          player.trigger('adtimeout');
         }
       });
     });
@@ -47,6 +66,9 @@
       var adSources = player.vast.ad.sources();
 
       player.src(adSources);
+      player.vast.linearEvent('creativeView');
+      firePixel(player.vast.ad.impressions);
+
       player.one('durationchange', function(){
         player.play();
       });
@@ -58,8 +80,22 @@
       player.vast.skipButton = skipButton;
       player.el().appendChild(skipButton);
 
+      var timeupdateEvents = {
+        0   : 'start',
+        0.25: 'firstQuartile',
+        0.5 : 'midpoint',
+        0.75: 'thirdQuartile'
+      };
+
       player.on("timeupdate", function(){
         var timeLeft = Math.ceil(settings.skip - player.currentTime());
+        var percentage = player.currentTime() / player.duration();
+        for (var threshold in timeupdateEvents) {
+          if(threshold < percentage) {
+            player.vast.linearEvent(timeupdateEvents[threshold]);
+            delete timeupdateEvents[threshold];
+          }
+        }
         if(timeLeft > 0) {
           player.vast.skipButton.innerHTML = "Skip in " + timeLeft + "...";
         } else {
@@ -86,7 +122,19 @@
     });
 
     player.vast.click = function(e) {
-      window.open(player.vast.ad.linear().clickThrough);
+      var linearAd = player.vast.ad.linear();
+      firePixel(linearAd.clickTracking);
+      window.open(linearAd.clickThrough);
+    };
+
+    player.vast.linearEvent = function(eventName) {
+      if (player.vast.ad === undefined) {
+        return;
+      }
+      var uri = player.vast.ad.linear().tracking[eventName];
+      if (uri !== undefined) {
+        firePixel(uri);
+      }
     };
   };
 
