@@ -1,125 +1,94 @@
-function firePixel(url, parentElement){
-    var pixel = document.createElement('img');
-    pixel.setAttribute('src', url);
-    
-    if( parentElement !== undefined ){
-        parentElement.appendChild( pixel );
-    } else {
-        document.getElementsByTagName('body')[0].appendChild( pixel );
+(function(vjs) {
+  var
+  extend = function(obj) {
+    var arg, i, k;
+    for (i = 1; i < arguments.length; i++) {
+      arg = arguments[i];
+      for (k in arg) {
+        if (arg.hasOwnProperty(k)) {
+          obj[k] = arg[k];
+        }
+      }
     }
-}
+    return obj;
+  },
 
-function timeupdate() {
-    // start
-    // midpoint
-    // firstQuartile
-    // thirdQuartile
-    // complete
-}
+  defaults = {
+    skip: 5,
+  },
 
-
-function skipAd() {
-
-    var blocker = this.el().getElementsByClassName('vjs-vast-blocker');
-    for(var i=0;i<blocker.length;i++) {
-        this.el().removeChild(blocker[i]);
-    }
-    
-    this.controlBar.progressControl.show();
-    
-    if(vast.cachedSrc !== undefined) {
-        this.src(vast.cachedSrc);
-        vast.cachedSrc = undefined;
-    }
-    
-    this.load();
-    this.one('loadedmetadata', this.play);
-}
-
-function startAd() {
+  vastPlugin = function(options) {
     var player = this;
+    var settings = extend({}, defaults, options || {});
 
-    var blocker = document.createElement('a');
-    blocker.className = 'vjs-vast-blocker';
-    blocker.onclick = function() {
-        player.pause();
-        if(blocker.getAttribute("href") !== null) {
-            for(var i=0;i<vast.ad.linear().clickTracking.length;i++) {
-                var url = vast.ad.linear().clickTracking[i];
-                firePixel(url, blocker);
-            }
-        }
-    };
-
-    var skipButton = document.createElement('div');
-    skipButton.className = 'vjs-skip-button';
-    skipButton.onclick = function() {
-        player.trigger('skip');
-        return false;
-    };
-    this.on('skip', skipAd);
-
-    this.controlBar.progressControl.hide();
-    
-    this.el().appendChild(blocker);
-    
-    this.controlBar.el().style.setProperty('z-index', '2');
-
-    if (vast.ad !== undefined) {
-        var linear = vast.ad.linear();
-        if(linear === undefined) {
-            player.trigger('skip');
-            return;
-        }
-
-        vast.cachedSrc = this.currentSrc();
-        blocker.appendChild(skipButton);
-
-        if (linear.clickThrough) {
-            blocker.setAttribute("href", linear.clickThrough);
-            blocker.setAttribute("target", "_blank");
-        }
-
-        // Setup events
-        this.on('timeupdate', timeupdate);
-
-        this.src(linear.sources());
-        this.load();
-        this.play();
-
-        this.one('ended', skipAd);
-    } else {
-        // For some reason, we can't pause now. We have to wait for a time update.
-        this.one('timeupdate', function() {
-            this.pause();
-            this.loadingSpinner.show();
-        });
-
-        setTimeout(function(){
-            player.trigger('skip');
-        }, 2000);
+    if (player.ads === undefined) {
+        console.log("VAST requires videojs-contrib-ads");
+        return;
     }
-}
 
-function onVastload(event) {
-    this.vast.ad = this.vast.ads[0][0];
-    console.log(this.vast.ad);
-}
-
-
-function vast(options) {
-    var player = this;
-
-    this.one('play', startAd);
-    this.on('vastload', onVastload);
-
-    options = options || {};
-    options.VASTServers = options.VASTServers || [];
-    vast.ads = [];
-    for(var i=0;i<options.VASTServers.length;i++) {
-        fetchVAST(options.VASTServers[i], function(ads){
-            vast.ads.push(ads);
-            player.trigger('vastload');
-        });
+    // If we don't have a VAST url, just bail out.
+    if(options.url === undefined) {
+      return;
     }
-}
+
+    player.on('contentupdate', function(){
+      fetchVAST(options.url, function(ads){
+        if(ads.length > 0) {
+          player.vast.ad = ads[0];
+          player.trigger('adsready');
+        }
+      });
+    });
+
+    player.on('readyforpreroll', function() {
+      player.ads.startLinearAdMode();
+
+      // play your linear ad content
+      var adSources = player.vast.ad.sources();
+
+      player.src(adSources);
+      player.one('durationchange', function(){
+        player.play();
+      });
+
+      player.one('click', player.vast.click);
+
+      var skipButton = document.createElement("div");
+      skipButton.className = "vast-skip-button";
+      player.vast.skipButton = skipButton;
+      player.el().appendChild(skipButton);
+
+      player.on("timeupdate", function(){
+        var timeLeft = Math.ceil(settings.skip - player.currentTime());
+        if(timeLeft > 0) {
+          player.vast.skipButton.innerHTML = "Skip in " + timeLeft + "...";
+        } else {
+          if((' ' + player.vast.skipButton.className + ' ').indexOf(' enabled ') === -1){
+            player.vast.skipButton.className += " enabled";
+            player.vast.skipButton.innerHTML = "Skip";
+          }
+        }
+      });
+
+      skipButton.onclick = function(e) {
+        e.stopPropagation();
+        if((' ' + player.vast.skipButton.className + ' ').indexOf(' enabled ') === -1) {
+          return;
+        }
+        player.trigger('ended');
+      };
+
+      player.one('ended', function() {
+        player.vast.skipButton.parentNode.removeChild(player.vast.skipButton);
+        player.off('click', player.vast.click);
+        player.ads.endLinearAdMode();
+      });
+    });
+
+    player.vast.click = function(e) {
+      window.open(player.vast.ad.linear().clickThrough);
+    };
+  };
+
+  vjs.plugin('vast', vastPlugin);
+}(window.videojs));
