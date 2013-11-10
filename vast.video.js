@@ -111,15 +111,24 @@
         if((' ' + player.vast.skipButton.className + ' ').indexOf(' enabled ') === -1) {
           return;
         }
-        player.trigger('ended');
+        player.vast.tearDown();
       };
 
-      player.one('ended', function() {
-        player.vast.skipButton.parentNode.removeChild(player.vast.skipButton);
-        player.off('click', player.vast.click);
-        player.ads.endLinearAdMode();
-      });
+      player.one('ended', player.vast.ended);
     });
+
+    player.vast.tearDown = function() {
+      player.vast.ad = undefined;
+      player.vast.skipButton.parentNode.removeChild(player.vast.skipButton);
+      player.off('click', player.vast.click);
+      player.off('ended', player.vast.ended);
+      player.ads.endLinearAdMode();
+    };
+
+    player.vast.ended = function(e) {
+      player.vast.linearEvent("complete");
+      player.vast.tearDown();
+    };
 
     player.vast.click = function(e) {
       var linearAd = player.vast.ad.linear();
@@ -128,6 +137,7 @@
     };
 
     player.vast.linearEvent = function(eventName) {
+      console.log(eventName);
       if (player.vast.ad === undefined) {
         return;
       }
