@@ -250,8 +250,12 @@ function Wrapper(node) {
     if (impression !== undefined) {
         this.impressions.push(impression);
     }
-    this.adTagURI = getNodeText(node, 'VASTAdTagURI');
-
+    
+    // HACK Gilles BEGUIER
+    this.adTagURI = getNodeText(node, 'VASTAdTagURL');
+    if(!this.adTagURI)
+        this.adTagURI = getNodeText(node, 'VASTAdTagURI');
+    
     // Optional Elements
     this.error = getNodeText(node, 'Error');
 
