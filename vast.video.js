@@ -50,6 +50,9 @@
       skipButton.onclick = function(e) {
         player.vast.end();
       };
+      
+      player.vast.isAdPlaying = true;
+      player.vast.addClickThroughLink(ad);
 
       player.on("timeupdate", function(){
         var timeLeft = Math.ceil(settings.skip - player.currentTime());
@@ -75,6 +78,10 @@
         player.vast.skipButton.parentNode.removeChild(player.vast.skipButton);
       }
       player.controlBar.progressControl.el().style.display = "block";
+      
+      player.vast.isAdPlaying = false;
+      player.vast.clickThrough.parentNode.removeChild(player.vast.clickThrough);
+      
       player.play();
     };
 
@@ -82,6 +89,28 @@
     if(options.url === undefined) {
       return;
     }
+    
+    /**
+     * 
+     * Add the link to the ad on the video 
+     * 
+     */
+    player.vast.addClickThroughLink = function() {           
+        var linear = player.vast.ads[0].linear();
+        
+        if (linear.clickThrough) {
+            player.vast.clickThrough = document.createElement("a");
+            player.vast.clickThrough.setAttribute("href", linear.clickThrough);
+            player.vast.clickThrough.setAttribute("target", "_blank");
+            player.vast.clickThrough.className = "vast-clickthrough-link";
+           
+            player.el().appendChild(player.vast.clickThrough);
+            
+            player.vast.clickThrough.onclick = function () {
+                player.pause();
+            };
+        }
+    };
 
     /* If autoplay is on, we don't want the video to start playing before the preroll loads.
      * This is a hack, but it seems to work */
@@ -98,6 +127,8 @@
 
     // Fetch the vast document
     fetchVAST(options.url, function(ads){
+      player.vast.ads = ads;
+
       if(ads.length > 0) {
         player.vast.start(ads[0]);
       }
