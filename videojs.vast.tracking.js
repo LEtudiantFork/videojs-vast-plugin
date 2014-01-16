@@ -2,40 +2,63 @@
     videojs.Player.tracking = [];
     videojs.Player.tracking.active = false;
 
+    function addEvent(domElement, eName, callback) {
+        if (document.addEventListener) {
+            domElement.addEventListener(
+                eName,
+                function(){ callback(this); },
+                false
+            );
+        } else if (document.attachEvent) {
+            domElement.attachEvent(
+                'on'+eName, 
+                function(){ callback(this); }
+            );
+        }           
+    }
+
     videojs.Player.prototype.launchTracking = function(eName) { 
         
-        var url = '';
+        var urls = undefined;
         
         if(eName === 'clickThrough')
         {
-            console.log(this.vast.ads[0].creatives[0]);
-            var urls = this.vast.ads[0].creatives[0].clickTracking;
-            
-            for(var i in urls)
-            {   
-                url = urls[i];
-                console.log("[VAST Tracking] "+eName+" ("+url+")");
-                this.addPixel(url);
-            }
+            urls = this.vast.ads[0].creatives[0].clickTracking;           
+        }
+        else if(eName === 'impression')
+        {
+            urls = this.vast.ads[0].impressions;            
         }
         else
         {       
-            url = this.vast.ads[0].creatives[0].tracking[eName]; 
-            console.log("[VAST Tracking] "+eName+" ("+url+")");
-            this.addPixel(url);
+            urls = this.vast.ads[0].creatives[0].tracking[eName]; 
         }
 
+        var url = '';
+        for(var i in urls)
+        {
+            url = urls[i];
+            console.log("[VAST Tracking] "+eName+" ("+url+")");
+            this.addPixel(url);
+        }  
         
     };
     
     videojs.Player.prototype.addPixel = function(url) {
+        
+        if(url === undefined)
+        {
+            return false;
+        }
+        
         var pixel = document.createElement('img');
         
         pixel.style.display = 'none';
         pixel.setAttribute('src', url);
 
         document.getElementsByTagName('body')[0].appendChild(pixel);
-        console.log(pixel);
+        
+        return true;
     };
     
     
@@ -44,8 +67,7 @@
             options = {};
         }
 
-        loaded = function() {    
-            
+        loaded = function() { 
             if(false && !this.vast.isAdPlaying)
             {
                 if(this.tracking.isActive === true)
@@ -62,28 +84,28 @@
             
             this.tracking.pPercent  = this.tracking.pProgress = false;
                  
-            if (document.addEventListener) {
-                this.vast.skipButton.addEventListener(
-                    'click',
-                    function(){  vjs.launchTracking('skip'); endtracking.call(vjs); },
-                    false
-                );
-                this.vast.clickThrough.addEventListener(
-                    'click',
-                    function(){  vjs.launchTracking('clickThrough'); },
-                    false
-                );
-                    
-            } else if (document.attachEvent) {
-                this.vast.skipButton.attachEvent(
-                    'onclick', 
-                    function(){  vjs.launchTracking('skip'); endtracking.call(vjs); }
-                );
-                this.vast.clickThrough.attachEvent(
-                    'onclick', 
-                    function(){  vjs.launchTracking('clickThrough'); }
-                );
-            }
+            addEvent(
+                this.vast.skipButton,
+                'click',
+                function(el){ 
+                    var classList = el.className.split(' ');
+                    for(var i in classList)
+                    {
+                        if(classList[i] === 'enabled')
+                        {
+                            vjs.launchTracking('skip'); endtracking.call(vjs);
+                            break;
+                        }
+                    }               
+                }
+            );
+            addEvent(
+                this.vast.clickThrough,
+                'click',
+                function(){  
+                    vjs.launchTracking('clickThrough');
+                }
+            );
             
             this.on("pause", pause);
             this.on("play", resume);
@@ -96,6 +118,7 @@
             this.tracking.isActive = true;
         };  
        
+        // TODO: corriger tracking sur évênements unmute
         volumechange = function() {
             var muted = this.muted();       
             if(muted)
@@ -145,7 +168,9 @@
 
             if(cPercent < 0.25 && this.tracking.pPercent === false)
             {   
-                this.launchTracking('start');
+                this.launchTracking('impression');
+                this.launchTracking('createView'); 
+                this.launchTracking('start');                                 
             }
             else if(cPercent >= 0.25 && this.tracking.pPercent < 0.25)
             {
@@ -184,7 +209,7 @@
         };
 
 
-        this.on("loadedmetadata", loaded);
+        this.on("loadstart", loaded);
 
     });
 

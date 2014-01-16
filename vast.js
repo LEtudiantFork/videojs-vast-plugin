@@ -66,6 +66,28 @@ function compareMediaFiles(a, b) {
     return 0;
 }
 
+
+function getTracking(node)
+{
+    /* The <TrackingEvents> element may contain one or more <Tracking> elements. An event
+     * attribute for the <Tracking> element enables ad servers to include individual tracking
+     * URIs for events they want to track. */
+    var tracking = {};
+    if(node.getElementsByTagName('TrackingEvents').length > 0) {
+        var trackingEventsNode = node.getElementsByTagName('TrackingEvents')[0];
+        var trackingNodes = trackingEventsNode.getElementsByTagName('Tracking');
+        for (var j=0;j<trackingNodes.length;j++) {
+            var eventName = trackingNodes[j].getAttribute('event');
+            if (tracking[eventName] === undefined) {
+                tracking[eventName] = [];
+            }
+            tracking[eventName].push(getTextContent(trackingNodes[j]));
+        }
+    }
+    
+    return tracking;
+}
+
 /**************************************/
 /* Objects to hold the VAST node data */
 /**************************************/
@@ -106,18 +128,8 @@ function Linear(node) {
     /* The <TrackingEvents> element may contain one or more <Tracking> elements. An event
      * attribute for the <Tracking> element enables ad servers to include individual tracking
      * URIs for events they want to track. */
-    this.tracking = {};
-    if(node.getElementsByTagName('TrackingEvents').length > 0) {
-        var trackingEventsNode = node.getElementsByTagName('TrackingEvents')[0];
-        var trackingNodes = trackingEventsNode.getElementsByTagName('Tracking');
-        for (var j=0;j<trackingNodes.length;j++) {
-            var eventName = trackingNodes[j].getAttribute('event');
-            if (this.tracking[eventName] === undefined) {
-                this.tracking[eventName] = [];
-            }
-            this.tracking[eventName].push(getTextContent(trackingNodes[j]));
-        }
-    }
+    this.tracking = getTracking(node);
+
 
 
     /* The <MediaFiles> element is a container for one or more <MediaFile> elements, each of
@@ -155,7 +167,7 @@ function Linear(node) {
     // Given the media files we have, what souces should VideoJS try to use?
     this.sources = function(width, types) {
         //Changed this to make mp4 first choice because Safari is now shipping with a finnicky webm implementation -SB
-        types = types || ['video/mp4', 'video/webm', 'video/ogv'];
+        types = types || ['video/mp4', 'video/webm', 'video/ogv', 'video/flv', 'video/x-flv'];
 
         var typeSources = {};
         for(var i=0;i<this.mediaFiles.length;i++) {
@@ -250,6 +262,8 @@ function Wrapper(node) {
     if (impression !== undefined) {
         this.impressions.push(impression);
     }
+    
+    this.tracking = getTracking(node);
     
     // HACK Gilles BEGUIER
     this.adTagURI = getNodeText(node, 'VASTAdTagURL');
@@ -351,6 +365,18 @@ function fetchVAST(url, cbk, wrapper, videoAdId, companionTargeting) {
                     for(var j=0;j<wrapper.impressions.length;j++) {
                         inline.impressions.push(wrapper.impressions[j]);
                     }
+                    
+                    // Add Wrapper(s) tracking into linear tracking object
+                    for(var trackingType in wrapper.tracking) {
+                        if(!inline.linear().tracking[trackingType])
+                        {
+                            inline.linear().tracking[trackingType] = [];
+                        }
+                        for(var k in wrapper.tracking[trackingType])
+                        {
+                            inline.linear().tracking[trackingType].push(wrapper.tracking[trackingType][k]);
+                        }                 
+                    }
                 }
                 inline.video_ad_id = videoAdId;
                 inline.companion_targeting = companionTargeting;
@@ -361,6 +387,18 @@ function fetchVAST(url, cbk, wrapper, videoAdId, companionTargeting) {
                 if(wrapper !== undefined) {
                     for(var k=0;k<wrapper.impressions.length;k++) {
                         newWrapper.impressions.push(wrapper.impressions[k]);
+                    } 
+                    
+                     // Add Wrapper(s) tracking new wrapper
+                    for(var trackingType in wrapper.tracking) {
+                        if(!inline.linear().tracking[trackingType])
+                        {
+                            newWrapper.tracking[trackingType] = [];
+                        }
+                        for(var k in wrapper.tracking[trackingType])
+                        {
+                            newWrapper.tracking[trackingType].push(wrapper.tracking[trackingType][k]);
+                        }                 
                     }
                 }
                 fetchVAST(newWrapper.adTagURI, cbk, newWrapper, videoAdId, companionTargeting);

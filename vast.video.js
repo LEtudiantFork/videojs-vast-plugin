@@ -46,11 +46,7 @@
       skipButton.className = "vast-skip-button";
       player.vast.skipButton = skipButton;
       player.el().appendChild(skipButton);
-      
-      skipButton.onclick = function(e) {
-        player.vast.end();
-      };
-      
+        
       player.vast.isAdPlaying = true;
       player.vast.addClickThroughLink(ad);
 
@@ -62,6 +58,9 @@
           if((' ' + player.vast.skipButton.className + ' ').indexOf(' enabled ') === -1){
             player.vast.skipButton.className += " enabled";
             player.vast.skipButton.innerHTML = "Skip";
+            skipButton.onclick = function(e) {
+                player.vast.end();
+            };
           }
         }
       });
@@ -80,7 +79,10 @@
       player.controlBar.progressControl.el().style.display = "block";
       
       player.vast.isAdPlaying = false;
-      player.vast.clickThrough.parentNode.removeChild(player.vast.clickThrough);
+
+      if(player.vast.clickThrough) {
+        player.vast.clickThrough.parentNode.removeChild(player.vast.clickThrough);
+      }
       
       player.play();
     };
