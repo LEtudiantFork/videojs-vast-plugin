@@ -82,7 +82,7 @@
             
             console.log('[VAST Tracking] tracking prêt...');
             
-            this.tracking.pPercent  = this.tracking.pProgress = false;
+            this.tracking.pPercent  = this.tracking.pProgress = this.lastVolume = false;
                  
             addEvent(
                 this.vast.skipButton,
@@ -118,17 +118,18 @@
             this.tracking.isActive = true;
         };  
        
-        // TODO: corriger tracking sur évênements unmute
         volumechange = function() {
             var muted = this.muted();       
             if(muted)
             {
                  this.launchTracking('mute');
             }
-            else
+            else if(this.lastVolume === 0)
             {
                 this.launchTracking('unmute');
             }      
+            
+            this.lastVolume = this.volume();
         };
 
         pause = function() {                    
