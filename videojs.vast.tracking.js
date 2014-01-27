@@ -100,13 +100,13 @@
                     }               
                 }
             );
-            addEvent(
-                this.vast.clickThrough,
-                'click',
-                function(){  
-                    vjs.launchTracking('clickThrough');
-                }
-            );
+            // addEvent(
+            //     this.vast.clickThrough,
+            //     'click',
+            //     function(){  
+            //         vjs.launchTracking('clickThrough');
+            //     }
+            // );
             
             this.on("pause", pause);
             this.on("play", resume);

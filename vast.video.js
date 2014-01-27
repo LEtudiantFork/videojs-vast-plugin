@@ -116,25 +116,25 @@
 
     /* If autoplay is on, we don't want the video to start playing before the preroll loads.
      * This is a hack, but it seems to work */
-    player.one('loadstart', function(e){
+    player.one('play', function(e){
       if (player.options().autoplay === true) {
         player.pause();
       }
+
+      // Fetch the vast document
+      fetchVAST(options.url, function(ads){
+        player.vast.ads = ads;
+
+        if(ads.length > 0) {
+          player.vast.start(ads[0]);
+        }
+      });
     });
 
     // If we don't get a vast doc in the next 2 seconds, just play the video.
     player.vast.timeout = setTimeout(function(){
       player.vast.end();
-    }, 2000);
-
-    // Fetch the vast document
-    fetchVAST(options.url, function(ads){
-      player.vast.ads = ads;
-
-      if(ads.length > 0) {
-        player.vast.start(ads[0]);
-      }
-    });
+    }, 5000);
   };
 
   vjs.plugin('vast', vastPlugin);
