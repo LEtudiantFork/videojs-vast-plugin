@@ -67,8 +67,9 @@
             options = {};
         }
 
-        loaded = function() { 
-            if(false && !this.vast.isAdPlaying)
+        loaded = function() {    
+            
+            if(!this.vast.isAdPlaying)
             {
                 if(this.tracking.isActive === true)
                 {
