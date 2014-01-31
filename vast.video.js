@@ -101,16 +101,21 @@
         var linear = player.vast.ads[0].linear();
         
         if (linear.clickThrough) {
-            player.vast.clickThrough = document.createElement("a");
-            player.vast.clickThrough.setAttribute("href", linear.clickThrough);
-            player.vast.clickThrough.setAttribute("target", "_blank");
-            player.vast.clickThrough.className = "vast-clickthrough-link";
+            if(typeof options.clickThroughBehaviour === "function") {
+              options.clickThroughBehaviour(player, linear.clickThrough);
+            }
+            else {
+              player.vast.clickThrough = document.createElement("a");
+              player.vast.clickThrough.setAttribute("href", linear.clickThrough);
+              player.vast.clickThrough.setAttribute("target", "_blank");
+              player.vast.clickThrough.className = "vast-clickthrough-link";
            
+              player.vast.clickThrough.onclick = function () {
+                  player.pause();
+              };
+            }
+
             player.el().appendChild(player.vast.clickThrough);
-            
-            player.vast.clickThrough.onclick = function () {
-                player.pause();
-            };
         }
     };
 
