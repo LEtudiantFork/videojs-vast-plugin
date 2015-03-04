@@ -21,7 +21,7 @@
     var player = this;
     var settings = extend({}, defaults, options || {});
 
-    player.vast.start = function(ad) {
+    player.vast.start = function(ad, autoplay, hasSkipButton) {
       if(player.vast.timeout !== undefined) {
         clearTimeout(player.vast.timeout);
       }
@@ -37,33 +37,40 @@
           }
         }
       }
+
       player.src(newSources);
-      player.play();
+
+      if (autoplay === true) {
+          player.play();
+      }
+
       player.controlBar.progressControl.el().style.display = "none";
       player.one('ended', player.vast.end);
 
-      var skipButton = document.createElement("div");
-      skipButton.className = "vast-skip-button";
-      player.vast.skipButton = skipButton;
-      player.el().appendChild(skipButton);
-        
-      player.vast.isAdPlaying = true;
-      player.vast.addClickThroughLink(ad);
+      if (hasSkipButton === true) {
+          var skipButton = document.createElement("div");
+          skipButton.className = "vast-skip-button";
+          player.vast.skipButton = skipButton;
+          player.el().appendChild(skipButton);
 
-      player.on("timeupdate", function(){
-        var timeLeft = Math.ceil(settings.skip - player.currentTime());
-        if(timeLeft > 0) {
-          player.vast.skipButton.innerHTML = "Skip in " + timeLeft + "...";
-        } else {
-          if((' ' + player.vast.skipButton.className + ' ').indexOf(' enabled ') === -1){
-            player.vast.skipButton.className += " enabled";
-            player.vast.skipButton.innerHTML = "Skip";
-            skipButton.onclick = function(e) {
-                player.vast.end();
-            };
-          }
-        }
-      });
+          player.vast.isAdPlaying = true;
+          player.vast.addClickThroughLink(ad);
+
+          player.on("timeupdate", function(){
+              var timeLeft = Math.ceil(settings.skip - player.currentTime());
+              if(timeLeft > 0) {
+                  player.vast.skipButton.innerHTML = "Skip in " + timeLeft + "...";
+              } else {
+                  if((' ' + player.vast.skipButton.className + ' ').indexOf(' enabled ') === -1){
+                      player.vast.skipButton.className += " enabled";
+                      player.vast.skipButton.innerHTML = "Skip";
+                      skipButton.onclick = function(e) {
+                          player.vast.end();
+                      };
+                  }
+              }
+          });
+      }
 
     };
 
@@ -83,7 +90,7 @@
       if(player.vast.clickThrough) {
         player.vast.clickThrough.parentNode.removeChild(player.vast.clickThrough);
       }
-      
+
       player.play();
     };
 
@@ -121,25 +128,38 @@
 
     /* If autoplay is on, we don't want the video to start playing before the preroll loads.
      * This is a hack, but it seems to work */
-    player.one('play', function(e){
-      if (player.options().autoplay === true) {
-        player.pause();
-      }
-
-      // Fetch the vast document
-      fetchVAST(options.url, function(ads){
-        player.vast.ads = ads;
-
-        if(ads.length > 0) {
-          player.vast.start(ads[0]);
+    player.one('loadstart', function(e){
+        if (player.options().autoplay === true) {
+            player.pause();
         }
-      });
+
+        // Fetch the vast document
+        fetchVAST(options.url, function(ads){
+            player.vast.ads = ads;
+
+            if(ads && ads.length > 0) {
+                player.vast.start(ads[0], false, true);
+            }
+        });
     });
 
     // If we don't get a vast doc in the next 2 seconds, just play the video.
     player.vast.timeout = setTimeout(function(){
-      player.vast.end();
+        player.vast.end();
     }, 5000);
+
+
+    player.one('ended', function(e){
+        console.log('ENDED');
+        // Fetch the vast document
+        fetchVAST(options.url, function(ads){
+            player.vast.ads = ads;
+
+            if(ads && ads.length > 0) {
+                player.vast.start(ads[0], true, false);
+            }
+        });
+    });
   };
 
   vjs.plugin('vast', vastPlugin);
