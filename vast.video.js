@@ -28,14 +28,21 @@
       player.vast.originalSources = player.options().sources;
       var newSources = [];
       var adSources = ad.sources();
+      sourceFound = false;
       for(var i=0; i<adSources.length; i++) {
         var source = adSources[i];
         for(var j=0; j<player.vast.originalSources.length; j++) {
           if(player.vast.originalSources[j].type === source.type) {
             newSources.push(source);
+            sourceFound = true;
             break;
           }
         }
+      }
+      
+      // If no corresponding source format is found, we choose the last
+      if (sourceFound === false) {
+          newSources.push(source);
       }
 
       player.src(newSources);
@@ -150,7 +157,6 @@
 
 
     player.one('ended', function(e){
-        console.log('ENDED');
         // Fetch the vast document
         fetchVAST(options.url, function(ads){
             player.vast.ads = ads;
