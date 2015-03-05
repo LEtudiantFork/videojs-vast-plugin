@@ -21,33 +21,25 @@
         
         var urls = undefined;
         
-        if(eName === 'clickThrough')
-        {
+        if(eName === 'clickThrough') {
             urls = this.vast.ads[0].creatives[0].clickTracking;           
-        }
-        else if(eName === 'impression')
-        {
+        } else if(eName === 'impression') {
             urls = this.vast.ads[0].impressions;            
-        }
-        else
-        {       
+        } else {       
             urls = this.vast.ads[0].creatives[0].tracking[eName]; 
         }
 
         var url = '';
-        for(var i in urls)
-        {
+        for(var i in urls) {
             url = urls[i];
             console.log("[VAST Tracking] "+eName+" ("+url+")");
             this.addPixel(url);
         }  
-        
     };
     
     videojs.Player.prototype.addPixel = function(url) {
         
-        if(url === undefined)
-        {
+        if(url === undefined) {
             return false;
         }
         
@@ -69,10 +61,8 @@
 
         loaded = function() {    
             
-            if(!this.vast.isAdPlaying)
-            {
-                if(this.tracking.isActive === true)
-                {
+            if(!this.vast.isAdPlaying) {
+                if(this.tracking.isActive === true) {
                     endtracking.call(this);
                 }
                               
@@ -81,7 +71,7 @@
             
             var vjs = this;  
             
-            console.log('[VAST Tracking] tracking prêt...');
+            console.log('[VAST Tracking] tracking ready...');
             
             this.tracking.pPercent  = this.tracking.pProgress = this.lastVolume = false;
                  
@@ -97,6 +87,7 @@
                             vjs.launchTracking('skip'); endtracking.call(vjs);
                             break;
                         }
+
                     }               
                 }
             );
@@ -121,12 +112,9 @@
        
         volumechange = function() {
             var muted = this.muted();       
-            if(muted)
-            {
+            if(muted) {
                  this.launchTracking('mute');
-            }
-            else if(this.lastVolume === 0)
-            {
+            } else if(this.lastVolume === 0) {
                 this.launchTracking('unmute');
             }      
             
@@ -146,20 +134,16 @@
         };
                 
         rewind = function() {
-            if(this.tracking.pProgress !== false && this.tracking.pProgress > this.currentTime() )
-            {             
+            if(this.tracking.pProgress !== false && this.tracking.pProgress > this.currentTime()) {             
                 this.launchTracking('rewind');
             }
             this.tracking.pProgress = this.currentTime();
         };
         
         fullscreenchange = function() {                        
-            if(this.isFullScreen)
-            {
+            if(this.isFullScreen) {
                 this.launchTracking('fullscreen');
-            }
-            else
-            {
+            } else {
                 this.launchTracking('exitFullscreen');
             }      
         };
@@ -168,35 +152,25 @@
             var cTime = this.currentTime();
             var cPercent = cTime / this.duration();
 
-            if(cPercent < 0.25 && this.tracking.pPercent === false)
-            {   
+            if(cPercent < 0.25 && this.tracking.pPercent === false) {   
                 this.launchTracking('impression');
                 this.launchTracking('createView'); 
                 this.launchTracking('start');                                 
-            }
-            else if(cPercent >= 0.25 && this.tracking.pPercent < 0.25)
-            {
+            } else if(cPercent >= 0.25 && this.tracking.pPercent < 0.25) {
                 this.launchTracking('firstQuartile');
-            }
-            else if(cPercent >= 0.5 && this.tracking.pPercent < 0.5)
-            {
+            } else if(cPercent >= 0.5 && this.tracking.pPercent < 0.5) {
                 this.launchTracking('midpoint');
-            }
-            else if(cPercent > 0.75 && this.tracking.pPercent < 0.75)
-            {
+            } else if(cPercent > 0.75 && this.tracking.pPercent < 0.75) {
                 this.launchTracking('thirdQuartile');
-            }
-            else if(cPercent == 1)
-            {
+            } else if(cPercent == 1) {
                 this.launchTracking('complete');
-               
             }
 
             this.tracking.pPercent = cPercent;       
         };
 
         endtracking = function() {
-            console.log("[VAST Tracking] fin du tracking");
+            console.log("[VAST Tracking] end of tracking");
             
             this.off("pause", pause);
             this.off("play", resume);
